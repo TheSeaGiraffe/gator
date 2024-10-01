@@ -1,0 +1,3 @@
+# Ignore the bin directory and ignore any files called `gator`
+bin/
+gator
