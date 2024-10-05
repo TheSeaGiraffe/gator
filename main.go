@@ -2,25 +2,48 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"os"
 
+	"github.com/TheSeaGiraffe/gator/internal/commands"
 	"github.com/TheSeaGiraffe/gator/internal/config"
+	"github.com/TheSeaGiraffe/gator/internal/state"
 )
 
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
-		log.Fatalf("Error loading config file: %v", err)
+		fmt.Printf("%s\n", err.Error())
+		os.Exit(1)
 	}
 
-	err = cfg.SetUser("fahmi")
-	if err != nil {
-		log.Fatalf("Error setting user: %v", err)
+	st := state.State{
+		Config: &cfg,
 	}
 
-	cfg, err = config.Read()
+	cmds := commands.InitCommands()
+	cmds.Register("login", commands.HandlerLogin)
+
+	userArgs := os.Args
+	if len(userArgs) < 2 {
+		fmt.Println("Not enough arguments")
+		os.Exit(1)
+	}
+
+	cmdName := userArgs[1]
+	cmdArgs := []string{}
+	if len(userArgs) >= 3 {
+		cmdArgs = userArgs[2:]
+	}
+
+	loginCmd := commands.Command{
+		Name: cmdName,
+		Args: cmdArgs,
+	}
+
+	err = cmds.Run(&st, loginCmd)
 	if err != nil {
-		log.Fatalf("Error loading config file: %v", err)
+		fmt.Printf("%s\n", err.Error())
+		os.Exit(1)
 	}
 
 	fmt.Println("Successfully loaded config file. Current config:")
