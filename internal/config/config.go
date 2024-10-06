@@ -31,24 +31,24 @@ func getConfigFilePath() (string, error) {
 }
 
 // Read reads the `gatorconfig.json` file in order to set certain config values
-func Read() (Config, error) {
+func Read() (*Config, error) {
 	configFilePath, err := getConfigFilePath()
 	if err != nil {
-		return Config{}, fmt.Errorf("Error getting path to config file: %w", err)
+		return &Config{}, fmt.Errorf("Error getting path to config file: %w", err)
 	}
 
 	configFile, err := os.ReadFile(configFilePath)
 	if err != nil {
-		return Config{}, fmt.Errorf("Error reading config file: %w", err)
+		return &Config{}, fmt.Errorf("Error reading config file: %w", err)
 	}
 
 	var config Config
 	err = json.Unmarshal(configFile, &config)
 	if err != nil {
-		return Config{}, fmt.Errorf("Error unmarshaling config file: %w", err)
+		return &Config{}, fmt.Errorf("Error unmarshaling config file: %w", err)
 	}
 
-	return config, nil
+	return &config, nil
 }
 
 // SetUser writes the config file to the `gatorconfig.json` file, the default location of which is in

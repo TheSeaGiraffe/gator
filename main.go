@@ -1,12 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/TheSeaGiraffe/gator/internal/commands"
 	"github.com/TheSeaGiraffe/gator/internal/config"
+	"github.com/TheSeaGiraffe/gator/internal/database"
 	"github.com/TheSeaGiraffe/gator/internal/state"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -16,8 +19,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	db, err := sql.Open("postgres", cfg.DBUrl)
+	if err != nil {
+		fmt.Printf("Error connecting to database: %s", err.Error())
+	}
+	dbQueries := database.New(db)
+
 	st := state.State{
-		Config: &cfg,
+		DB:     dbQueries,
+		Config: cfg,
 	}
 
 	cmds := commands.InitCommands()
