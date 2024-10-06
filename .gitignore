@@ -1,3 +1,6 @@
 # Ignore the bin directory and ignore any files called `gator`
 bin/
 gator
+
+# Ignore the .env file
+.env
