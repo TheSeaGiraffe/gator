@@ -12,7 +12,7 @@ const configFileName = ".gatorconfig.json"
 // Config contains the configuration settings for the gator CLI
 type Config struct {
 	DBUrl           string `json:"db_url"`
-	CurrentUserName string `json:"current_user_name"`
+	CurrentUserName string `json:"current_user_name,omitempty"`
 }
 
 func getConfigFilePath() (string, error) {

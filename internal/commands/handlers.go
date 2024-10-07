@@ -84,3 +84,27 @@ func HandlerRegister(s *state.State, cmd Command) error {
 
 	return nil
 }
+
+func HandlerReset(s *state.State, cmd Command) error {
+	// Validate args
+	if len(cmd.Args) > 0 {
+		return fmt.Errorf("Command does not take any arguments")
+	}
+
+	// Delete all users in DB
+	err := s.DB.DeleteUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	// Remove `current_user_name` field from `~/.gatorconfig.json`
+	err = s.Config.SetUser("")
+	if err != nil {
+		return err
+	}
+
+	// Print message to console for logging purposes
+	fmt.Println("All users deleted from database and the previous user has been logged out.")
+
+	return nil
+}
