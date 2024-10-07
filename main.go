@@ -37,6 +37,7 @@ func main() {
 	cmds.Register("login", commands.HandlerLogin)
 	cmds.Register("register", commands.HandlerRegister)
 	cmds.Register("reset", commands.HandlerReset)
+	cmds.Register("users", commands.HandlerUsers)
 
 	// Maybe combine the logic for running commands into a single function
 	userArgs := os.Args

@@ -108,3 +108,33 @@ func HandlerReset(s *state.State, cmd Command) error {
 
 	return nil
 }
+
+func HandlerUsers(s *state.State, cmd Command) error {
+	// Validate user args
+	if len(cmd.Args) > 0 {
+		return fmt.Errorf("Command does not take any arguments")
+	}
+
+	// Get users from DB. Don't forget to validate slice.
+	users, err := s.DB.GetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	if len(users) == 0 {
+		fmt.Println("Database currently does not contain any users.")
+		return nil
+	}
+
+	// Print users
+	var userName string
+	for _, user := range users {
+		userName = fmt.Sprintf("* %s", user.Name)
+		if user.Name == s.Config.CurrentUserName {
+			userName = fmt.Sprintf("%s (current)", userName)
+		}
+		fmt.Println(userName)
+	}
+
+	return nil
+}
