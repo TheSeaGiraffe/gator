@@ -4,6 +4,3 @@ gator
 
 # Ignore the .env file
 .env
-
-# Ignore the sqlc config file
-sqlc.yaml
