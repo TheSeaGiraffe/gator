@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/TheSeaGiraffe/gator/internal/database"
@@ -165,5 +166,47 @@ func HandlerAgg(s *state.State, cmd Command) error {
 		fmt.Printf("Description: %s\n\n", item.Description)
 	}
 
+	return nil
+}
+
+func HandlerAddFeed(s *state.State, cmd Command) error {
+	// Validate user args. Do note that one of the args is a url
+	if len(cmd.Args) < 2 {
+		return fmt.Errorf("Missing arguments. `addfeed` takes the name of the RSS feed and its URL.")
+	} else if len(cmd.Args) > 2 {
+		return fmt.Errorf("Too many arguments. `addfeed` takes the name of the RSS feed and its URL.")
+	}
+
+	_, err := url.ParseRequestURI(cmd.Args[1])
+	if err != nil {
+		return fmt.Errorf("Invalid URL")
+	}
+
+	// Link feed to current user and add it to feeds table
+	user, err := s.DB.GetUser(context.Background(), s.Config.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	rssFeedParams := database.CreateFeedParams{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      cmd.Args[0],
+		Url:       cmd.Args[1],
+		UserID:    user.ID,
+	}
+	rssFeed, err := s.DB.CreateFeed(context.Background(), rssFeedParams)
+	if err != nil {
+		return fmt.Errorf("Error saving feed: %w", err)
+	}
+
+	fmt.Printf("\nRSS Feed ID: %d\n", rssFeed.ID)
+	fmt.Printf("RSS Feed created at: %s\n", rssFeed.CreatedAt.String())
+	fmt.Printf("RSS Feed updated at: %s\n", rssFeed.UpdatedAt.String())
+	fmt.Printf("RSS Feed name: %s\n", rssFeed.Name)
+	fmt.Printf("RSS Feed URL: %s\n", rssFeed.Url)
+	fmt.Printf("RSS Feed User ID: %v\n", rssFeed.UserID)
+
+	// Print a sample of items from the current feed
 	return nil
 }
