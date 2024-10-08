@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/TheSeaGiraffe/gator/internal/database"
+	"github.com/TheSeaGiraffe/gator/internal/rss"
 	"github.com/TheSeaGiraffe/gator/internal/state"
 	"github.com/google/uuid"
 )
@@ -134,6 +135,34 @@ func HandlerUsers(s *state.State, cmd Command) error {
 			userName = fmt.Sprintf("%s (current)", userName)
 		}
 		fmt.Println(userName)
+	}
+
+	return nil
+}
+
+func HandlerAgg(s *state.State, cmd Command) error {
+	// Ignore user args for now
+
+	// Get RSS feed at `https://www.wagslane.dev/index.xml`
+	rssFeed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+
+	// Print the entire RSSFeed struct to the console
+	// fmt.Printf("%+v\n", rssFeed)
+	fmt.Println("RSS Feed")
+	fmt.Println("========")
+	fmt.Printf("\nChannel title: %s\n", rssFeed.Channel.Title)
+	fmt.Printf("\nChannel link: %s\n", rssFeed.Channel.Link)
+	fmt.Printf("\nChannel description: %s\n\n", rssFeed.Channel.Description)
+
+	for i, item := range rssFeed.Channel.Item {
+		fmt.Printf("Item %d\n", i+1)
+		fmt.Printf("-------\n\n")
+		fmt.Printf("Title: %s\n", item.Title)
+		fmt.Printf("Link: %s\n", item.Link)
+		fmt.Printf("Description: %s\n\n", item.Description)
 	}
 
 	return nil

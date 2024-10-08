@@ -32,12 +32,7 @@ func main() {
 		Config: cfg,
 	}
 
-	// Maybe combine the command registration logic into a single function later
-	cmds := commands.InitCommands()
-	cmds.Register("login", commands.HandlerLogin)
-	cmds.Register("register", commands.HandlerRegister)
-	cmds.Register("reset", commands.HandlerReset)
-	cmds.Register("users", commands.HandlerUsers)
+	cmds := commands.NewCommands()
 
 	// Maybe combine the logic for running commands into a single function
 	userArgs := os.Args

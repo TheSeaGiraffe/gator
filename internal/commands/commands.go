@@ -15,10 +15,17 @@ type Commands struct {
 	List map[string]func(*state.State, Command) error
 }
 
-func InitCommands() Commands {
-	return Commands{
+func NewCommands() Commands {
+	cmds := Commands{
 		List: make(map[string]func(*state.State, Command) error),
 	}
+	cmds.Register("login", HandlerLogin)
+	cmds.Register("register", HandlerRegister)
+	cmds.Register("reset", HandlerReset)
+	cmds.Register("users", HandlerUsers)
+	cmds.Register("agg", HandlerAgg)
+
+	return cmds
 }
 
 // Register registers a new handler function for a command name
