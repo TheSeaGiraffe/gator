@@ -23,7 +23,7 @@ func HandlerLogin(s *state.State, cmd Command) error {
 		return fmt.Errorf("Username must be a single string")
 	}
 
-	user, err := s.DB.GetUser(context.Background(), cmd.Args[0])
+	user, err := s.DB.GetUserByName(context.Background(), cmd.Args[0])
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -78,7 +78,6 @@ func HandlerRegister(s *state.State, cmd Command) error {
 	}
 
 	fmt.Printf("User '%s' successfully created\n\n", user.Name)
-	fmt.Printf("User info:\n\n")
 	fmt.Printf("Name: %s\n", user.Name)
 	fmt.Printf("ID: %s\n", user.ID)
 	fmt.Printf("Created At: %s\n", user.CreatedAt.String())
@@ -170,7 +169,6 @@ func HandlerAgg(s *state.State, cmd Command) error {
 }
 
 func HandlerAddFeed(s *state.State, cmd Command) error {
-	// Validate user args. Do note that one of the args is a url
 	if len(cmd.Args) < 2 {
 		return fmt.Errorf("Missing arguments. `addfeed` takes the name of the RSS feed and its URL.")
 	} else if len(cmd.Args) > 2 {
@@ -182,8 +180,7 @@ func HandlerAddFeed(s *state.State, cmd Command) error {
 		return fmt.Errorf("Invalid URL")
 	}
 
-	// Link feed to current user and add it to feeds table
-	user, err := s.DB.GetUser(context.Background(), s.Config.CurrentUserName)
+	user, err := s.DB.GetUserByName(context.Background(), s.Config.CurrentUserName)
 	if err != nil {
 		return err
 	}
@@ -207,6 +204,31 @@ func HandlerAddFeed(s *state.State, cmd Command) error {
 	fmt.Printf("RSS Feed URL: %s\n", rssFeed.Url)
 	fmt.Printf("RSS Feed User ID: %v\n", rssFeed.UserID)
 
-	// Print a sample of items from the current feed
+	return nil
+}
+
+func HandlerFeeds(s *state.State, cmd Command) error {
+	if len(cmd.Args) > 0 {
+		return fmt.Errorf("Command does not take any arguments")
+	}
+
+	feeds, err := s.DB.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("Error retrieving feeds: %w", err)
+	}
+
+	for _, feed := range feeds {
+		user, err := s.DB.GetUserByID(context.Background(), feed.UserID)
+		if err != nil {
+			// Just skip the current iteration for now
+			// Might add better handling later
+			continue
+		}
+
+		fmt.Printf("Feed name: %s\n", feed.Name)
+		fmt.Printf("Feed URL: %s\n", feed.Url)
+		fmt.Printf("Feed owner: %s\n\n", user.Name)
+	}
+
 	return nil
 }

@@ -25,6 +25,7 @@ func NewCommands() Commands {
 	cmds.Register("users", HandlerUsers)
 	cmds.Register("agg", HandlerAgg)
 	cmds.Register("addfeed", HandlerAddFeed)
+	cmds.Register("feeds", HandlerFeeds)
 
 	return cmds
 }
