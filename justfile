@@ -23,4 +23,8 @@ db_connect:
 
 # perform the specified migration action
 migrate action="status":
-    goose -dir sql/schema postgres "$PSQL_DSN" {{action}}
+    goose {{action}}
+
+# create a new migration
+create_migration migration_name:
+    goose -s create {{ migration_name }} sql
