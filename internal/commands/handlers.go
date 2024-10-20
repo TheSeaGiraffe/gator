@@ -105,7 +105,7 @@ func HandlerReset(s *state.State, cmd Command) error {
 	}
 
 	// Print message to console for logging purposes
-	fmt.Println("All users deleted from database and the previous user has been logged out.")
+	fmt.Println("Database has been reset and the previous user has been logged out.")
 
 	return nil
 }
@@ -229,6 +229,53 @@ func HandlerFeeds(s *state.State, cmd Command) error {
 		fmt.Printf("Feed URL: %s\n", feed.Url)
 		fmt.Printf("Feed owner: %s\n\n", user.Name)
 	}
+
+	return nil
+}
+
+func HandlerFollow(s *state.State, cmd Command) error {
+	// Validate user input
+	if len(cmd.Args) == 0 {
+		return fmt.Errorf("Command expects a URL to an RSS Feed")
+	} else if len(cmd.Args) > 1 {
+		return fmt.Errorf("Command expects only a single argument")
+	}
+
+	_, err := url.ParseRequestURI(cmd.Args[0])
+	if err != nil {
+		return fmt.Errorf("Invalid URL")
+	}
+
+	// Check that feed exists
+	feed, err := s.DB.GetFeedsByURL(context.Background(), cmd.Args[0])
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return fmt.Errorf("Feed does not exist. Add it with the 'addfeed' command")
+		default:
+			return fmt.Errorf("Error retrieving feeds: %w", err)
+		}
+	}
+
+	// Get the info of the current user
+	user, err := s.DB.GetUserByName(context.Background(), s.Config.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	// Create a new feed follow record and print the results
+	feedFollowEntry := database.CreateFeedFollowParams{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
+	feedFollow, err := s.DB.CreateFeedFollow(context.Background(), feedFollowEntry)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s is now following '%s'\n", feedFollow.UserName, feedFollow.FeedName)
 
 	return nil
 }
