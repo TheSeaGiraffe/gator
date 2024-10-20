@@ -38,7 +38,7 @@ func HandlerLogin(s *state.State, cmd Command) error {
 		return err
 	}
 
-	fmt.Printf("Username has been set to '%s'\n", s.Config.CurrentUserName)
+	fmt.Printf("%s is now logged in.\n", s.Config.CurrentUserName)
 
 	return nil
 }
@@ -195,6 +195,17 @@ func HandlerAddFeed(s *state.State, cmd Command) error {
 	rssFeed, err := s.DB.CreateFeed(context.Background(), rssFeedParams)
 	if err != nil {
 		return fmt.Errorf("Error saving feed: %w", err)
+	}
+
+	feedFollowEntry := database.CreateFeedFollowParams{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    rssFeed.ID,
+	}
+	_, err = s.DB.CreateFeedFollow(context.Background(), feedFollowEntry)
+	if err != nil {
+		return fmt.Errorf("Error creating feed-follow entry: %w", err)
 	}
 
 	fmt.Printf("\nRSS Feed ID: %d\n", rssFeed.ID)
