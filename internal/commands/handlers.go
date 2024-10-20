@@ -279,3 +279,34 @@ func HandlerFollow(s *state.State, cmd Command) error {
 
 	return nil
 }
+
+func HandlerFollowing(s *state.State, cmd Command) error {
+	// Validate user input. Make sure that command doesn't take any input.
+	if len(cmd.Args) > 0 {
+		return fmt.Errorf("Command does not take any arguments")
+	}
+
+	// Get slice of feeds that the current user is following
+	user, err := s.DB.GetUserByName(context.Background(), s.Config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("Could not retrieve user: %w", err)
+	}
+
+	feedFollows, err := s.DB.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			fmt.Println("You are not following any feeds. Add some with the 'addfeed' command.")
+			return nil
+		default:
+			return fmt.Errorf("Could not retrieve feeds for current user: %w", err)
+		}
+	}
+
+	fmt.Printf("Currently following:\n\n")
+	for _, feed := range feedFollows {
+		fmt.Printf(" - %s\n", feed.FeedName)
+	}
+
+	return nil
+}

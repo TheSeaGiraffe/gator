@@ -27,6 +27,7 @@ func NewCommands() Commands {
 	cmds.Register("addfeed", HandlerAddFeed)
 	cmds.Register("feeds", HandlerFeeds)
 	cmds.Register("follow", HandlerFollow)
+	cmds.Register("following", HandlerFollowing)
 
 	return cmds
 }
