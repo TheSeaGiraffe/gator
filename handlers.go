@@ -202,6 +202,7 @@ func HandlerAddFeed(s *State, cmd Command, user database.User) error {
 		return fmt.Errorf("Error creating feed-follow entry: %w", err)
 	}
 
+	fmt.Printf("Feed %q successfully added.\n", rssFeed.Name)
 	fmt.Printf("\nRSS Feed ID: %d\n", rssFeed.ID)
 	fmt.Printf("RSS Feed created at: %s\n", rssFeed.CreatedAt.String())
 	fmt.Printf("RSS Feed updated at: %s\n", rssFeed.UpdatedAt.String())
@@ -296,9 +297,45 @@ func HandlerFollowing(s *State, cmd Command, user database.User) error {
 		}
 	}
 
-	fmt.Printf("Currently following:\n\n")
-	for _, feed := range feedFollows {
-		fmt.Printf(" - %s\n", feed.FeedName)
+	if len(feedFollows) == 0 {
+		fmt.Println("You aren't currently following anything. Use the 'follow' command to follow a feed.")
+	} else {
+		fmt.Printf("Currently following:\n\n")
+		for _, feed := range feedFollows {
+			fmt.Printf(" - %s\n", feed.FeedName)
+		}
+	}
+
+	return nil
+}
+
+func HandlerUnfollow(s *State, cmd Command, user database.User) error {
+	// Validate user input. Make sure that command only takes a feed's URL
+	if len(cmd.Args) == 0 {
+		return fmt.Errorf("Command expects the feed URL.")
+	} else if len(cmd.Args) > 1 {
+		return fmt.Errorf("Too many arguments. Make sure you are only passing the feed URL.")
+	}
+
+	// Get feed from URL
+	feed, err := s.DB.GetFeedsByURL(context.Background(), cmd.Args[0])
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return fmt.Errorf("Feed does not exist.")
+		default:
+			return err
+		}
+	}
+
+	// Delete feed-follow record for user
+	feedFollowRowDel := database.DeleteFeedParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	}
+	err = s.DB.DeleteFeed(context.Background(), feedFollowRowDel)
+	if err != nil {
+		return err
 	}
 
 	return nil
