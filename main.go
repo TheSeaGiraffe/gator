@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/TheSeaGiraffe/gator/internal/commands"
-	"github.com/TheSeaGiraffe/gator/internal/config"
 	"github.com/TheSeaGiraffe/gator/internal/database"
-	"github.com/TheSeaGiraffe/gator/internal/state"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	cfg, err := config.Read()
+	cfg, err := ReadConfig()
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		os.Exit(1)
@@ -27,12 +24,12 @@ func main() {
 	}
 	dbQueries := database.New(db)
 
-	st := state.State{
+	st := State{
 		DB:     dbQueries,
 		Config: cfg,
 	}
 
-	cmds := commands.NewCommands()
+	cmds := NewCommands()
 
 	// Maybe combine the logic for running commands into a single function
 	userArgs := os.Args
@@ -47,7 +44,7 @@ func main() {
 		cmdArgs = userArgs[2:]
 	}
 
-	cmd := commands.Command{
+	cmd := Command{
 		Name: cmdName,
 		Args: cmdArgs,
 	}

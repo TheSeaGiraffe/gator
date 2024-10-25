@@ -1,4 +1,4 @@
-package commands
+package main
 
 import (
 	"context"
@@ -10,13 +10,12 @@ import (
 
 	"github.com/TheSeaGiraffe/gator/internal/database"
 	"github.com/TheSeaGiraffe/gator/internal/rss"
-	"github.com/TheSeaGiraffe/gator/internal/state"
 	"github.com/google/uuid"
 )
 
 // HandlerLogin is a handler for the `login` subcommand. `login` is used to set the current user
 // to the specified user.
-func HandlerLogin(s *state.State, cmd Command) error {
+func HandlerLogin(s *State, cmd Command) error {
 	if len(cmd.Args) == 0 {
 		return fmt.Errorf("No username provided")
 	} else if len(cmd.Args) > 1 {
@@ -45,7 +44,7 @@ func HandlerLogin(s *state.State, cmd Command) error {
 
 // HandlerRegister is a handler for the `register` subcommand. `register` adds the current user
 // to the database.
-func HandlerRegister(s *state.State, cmd Command) error {
+func HandlerRegister(s *State, cmd Command) error {
 	// Check that a username was passed in the args
 	if len(cmd.Args) == 0 {
 		return fmt.Errorf("No username provided")
@@ -86,7 +85,7 @@ func HandlerRegister(s *state.State, cmd Command) error {
 	return nil
 }
 
-func HandlerReset(s *state.State, cmd Command) error {
+func HandlerReset(s *State, cmd Command) error {
 	// Validate args
 	if len(cmd.Args) > 0 {
 		return fmt.Errorf("Command does not take any arguments")
@@ -110,7 +109,7 @@ func HandlerReset(s *state.State, cmd Command) error {
 	return nil
 }
 
-func HandlerUsers(s *state.State, cmd Command) error {
+func HandlerUsers(s *State, cmd Command) error {
 	// Validate user args
 	if len(cmd.Args) > 0 {
 		return fmt.Errorf("Command does not take any arguments")
@@ -140,7 +139,7 @@ func HandlerUsers(s *state.State, cmd Command) error {
 	return nil
 }
 
-func HandlerAgg(s *state.State, cmd Command) error {
+func HandlerAgg(s *State, cmd Command) error {
 	// Ignore user args for now
 
 	// Get RSS feed at `https://www.wagslane.dev/index.xml`
@@ -168,7 +167,7 @@ func HandlerAgg(s *state.State, cmd Command) error {
 	return nil
 }
 
-func HandlerAddFeed(s *state.State, cmd Command) error {
+func HandlerAddFeed(s *State, cmd Command, user database.User) error {
 	if len(cmd.Args) < 2 {
 		return fmt.Errorf("Missing arguments. `addfeed` takes the name of the RSS feed and its URL.")
 	} else if len(cmd.Args) > 2 {
@@ -178,11 +177,6 @@ func HandlerAddFeed(s *state.State, cmd Command) error {
 	_, err := url.ParseRequestURI(cmd.Args[1])
 	if err != nil {
 		return fmt.Errorf("Invalid URL")
-	}
-
-	user, err := s.DB.GetUserByName(context.Background(), s.Config.CurrentUserName)
-	if err != nil {
-		return err
 	}
 
 	rssFeedParams := database.CreateFeedParams{
@@ -218,7 +212,7 @@ func HandlerAddFeed(s *state.State, cmd Command) error {
 	return nil
 }
 
-func HandlerFeeds(s *state.State, cmd Command) error {
+func HandlerFeeds(s *State, cmd Command) error {
 	if len(cmd.Args) > 0 {
 		return fmt.Errorf("Command does not take any arguments")
 	}
@@ -244,7 +238,7 @@ func HandlerFeeds(s *state.State, cmd Command) error {
 	return nil
 }
 
-func HandlerFollow(s *state.State, cmd Command) error {
+func HandlerFollow(s *State, cmd Command, user database.User) error {
 	// Validate user input
 	if len(cmd.Args) == 0 {
 		return fmt.Errorf("Command expects a URL to an RSS Feed")
@@ -268,12 +262,6 @@ func HandlerFollow(s *state.State, cmd Command) error {
 		}
 	}
 
-	// Get the info of the current user
-	user, err := s.DB.GetUserByName(context.Background(), s.Config.CurrentUserName)
-	if err != nil {
-		return err
-	}
-
 	// Create a new feed follow record and print the results
 	feedFollowEntry := database.CreateFeedFollowParams{
 		CreatedAt: time.Now(),
@@ -291,16 +279,10 @@ func HandlerFollow(s *state.State, cmd Command) error {
 	return nil
 }
 
-func HandlerFollowing(s *state.State, cmd Command) error {
+func HandlerFollowing(s *State, cmd Command, user database.User) error {
 	// Validate user input. Make sure that command doesn't take any input.
 	if len(cmd.Args) > 0 {
 		return fmt.Errorf("Command does not take any arguments")
-	}
-
-	// Get slice of feeds that the current user is following
-	user, err := s.DB.GetUserByName(context.Background(), s.Config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("Could not retrieve user: %w", err)
 	}
 
 	feedFollows, err := s.DB.GetFeedFollowsForUser(context.Background(), user.ID)

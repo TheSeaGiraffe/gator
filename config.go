@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"encoding/json"
@@ -31,7 +31,7 @@ func getConfigFilePath() (string, error) {
 }
 
 // Read reads the `gatorconfig.json` file in order to set certain config values
-func Read() (*Config, error) {
+func ReadConfig() (*Config, error) {
 	configFilePath, err := getConfigFilePath()
 	if err != nil {
 		return &Config{}, fmt.Errorf("Error getting path to config file: %w", err)
