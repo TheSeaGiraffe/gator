@@ -19,7 +19,7 @@ db_down:
 
 # connect to the DB using the provided DSN
 db_connect:
-    psql "$PSQL_DSN"
+    usql "$PSQL_DSN"
 
 # perform the specified migration action
 migrate action="status":
