@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/TheSeaGiraffe/gator/internal/database"
-	"github.com/TheSeaGiraffe/gator/internal/rss"
 	"github.com/google/uuid"
 )
+
+var defaultAggInterval = time.Minute * 5
 
 // HandlerLogin is a handler for the `login` subcommand. `login` is used to set the current user
 // to the specified user.
@@ -140,31 +141,31 @@ func HandlerUsers(s *State, cmd Command) error {
 }
 
 func HandlerAgg(s *State, cmd Command) error {
-	// Ignore user args for now
-
-	// Get RSS feed at `https://www.wagslane.dev/index.xml`
-	rssFeed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
-	if err != nil {
-		return err
+	// Validate user args
+	var tickInterval time.Duration
+	var err error
+	if len(cmd.Args) > 1 {
+		return fmt.Errorf("Too may arguments. `agg` takes a time duration string.")
+	} else if len(cmd.Args) == 0 {
+		tickInterval = defaultAggInterval
+	} else {
+		tickInterval, err = time.ParseDuration(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Could not parse time duration string.")
+		}
 	}
 
-	// Print the entire RSSFeed struct to the console
-	// fmt.Printf("%+v\n", rssFeed)
-	fmt.Println("RSS Feed")
-	fmt.Println("========")
-	fmt.Printf("\nChannel title: %s\n", rssFeed.Channel.Title)
-	fmt.Printf("\nChannel link: %s\n", rssFeed.Channel.Link)
-	fmt.Printf("\nChannel description: %s\n\n", rssFeed.Channel.Description)
-
-	for i, item := range rssFeed.Channel.Item {
-		fmt.Printf("Item %d\n", i+1)
-		fmt.Printf("-------\n\n")
-		fmt.Printf("Title: %s\n", item.Title)
-		fmt.Printf("Link: %s\n", item.Link)
-		fmt.Printf("Description: %s\n\n", item.Description)
+	// Get new feed after the specified tickInterval
+	// Since we're using `agg` to print feeds I think we should just log to a file in the event of an error
+	// For now I'll just break out of the loop.
+	ticker := time.NewTicker(tickInterval)
+	for ; ; <-ticker.C {
+		err = scrapeFeeds(s)
+		if err != nil {
+			ticker.Stop()
+			return fmt.Errorf("Error fetching feed: %w", err)
+		}
 	}
-
-	return nil
 }
 
 func HandlerAddFeed(s *State, cmd Command, user database.User) error {
