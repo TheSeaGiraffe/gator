@@ -2,8 +2,13 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
 
+	"github.com/TheSeaGiraffe/gator/internal/database"
 	"github.com/TheSeaGiraffe/gator/internal/rss"
 )
 
@@ -25,20 +30,82 @@ func scrapeFeeds(s *State) error {
 		return fmt.Errorf("Error fetching feed from URL: %w", err)
 	}
 
-	// Iterate over items in feed
-	fmt.Println("RSS Feed")
-	fmt.Println("========")
-	fmt.Printf("\nChannel title: %s\n", rssFeed.Channel.Title)
-	fmt.Printf("\nChannel link: %s\n", rssFeed.Channel.Link)
-	fmt.Printf("\nChannel description: %s\n\n", rssFeed.Channel.Description)
+	// Save all posts in feed to database
+	for _, item := range rssFeed.Channel.Item {
+		// Parse `PublishedAt` time string
+		publishedAtTime, err := parsePublishTime(item.PubDate)
+		if err != nil {
+			switch {
+			case err.Error() == "No suitable matches":
+				// Use the current time for now; will think of better solution later
+				publishedAtTime = time.Now()
+			default:
+				return err
+			}
+		}
 
-	for i, item := range rssFeed.Channel.Item {
-		fmt.Printf("Item %d\n", i+1)
-		fmt.Printf("-------\n\n")
-		fmt.Printf("Title: %s\n", item.Title)
-		fmt.Printf("Link: %s\n", item.Link)
-		fmt.Printf("Description: %s\n\n", item.Description)
+		// Create `sql.NullString` object
+		descString := sql.NullString{
+			String: item.Description,
+			Valid:  item.Description != "",
+		}
+
+		// Save post to DB
+		newPost := database.CreatePostParams{
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: descString,
+			PublishedAt: publishedAtTime,
+			FeedID:      feed.ID,
+		}
+
+		_, err = s.DB.CreatePost(context.Background(), newPost)
+		if (err != nil) && (err.Error() != `pq: duplicate key value violates unique constraint "posts_url_key"`) {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func parsePublishTime(timeStr string) (time.Time, error) {
+	// Get the relevant parts of the time string using regexes
+	matches, err := getTimeStrParts(timeStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("Error extracting parts of time string: %w", err)
+	}
+	if len(matches) == 0 {
+		return time.Time{}, fmt.Errorf("No suitable matches")
+	}
+
+	// Construct custom time format string and attempt to parse timeStr
+	var formatStrBuilder strings.Builder
+	formatStrBuilder.WriteString("Mon, 02 Jan 2006")
+	if len(strings.Split(matches[0], ":")) == 3 {
+		formatStrBuilder.WriteString(" 15:04:05 ")
+	} else {
+		formatStrBuilder.WriteString(" 15:04 ")
+	}
+	formatStrBuilder.WriteString(matches[1])
+
+	parsedTime, err := time.Parse(formatStrBuilder.String(), timeStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("Could not parse time string: %w", err)
+	}
+	return parsedTime, nil
+}
+
+func getTimeStrParts(timeStr string) ([]string, error) {
+	pattern := `(\d{2}:\d{2}(?::\d{2})?).*(\b[A-Z]+|\+\d{4})$`
+	r, err := regexp.Compile(pattern)
+	if err != nil {
+		return []string{}, fmt.Errorf("Error compiling regex: %w", err)
+	}
+	match := r.FindStringSubmatch(timeStr)
+	if len(match) == 0 {
+		return []string{}, nil
+	}
+	return match[1:], nil
 }

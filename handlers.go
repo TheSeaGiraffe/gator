@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/TheSeaGiraffe/gator/internal/database"
@@ -337,6 +338,49 @@ func HandlerUnfollow(s *State, cmd Command, user database.User) error {
 	err = s.DB.DeleteFeed(context.Background(), feedFollowRowDel)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func HandlerBrowse(s *State, cmd Command, user database.User) error {
+	// Validate user input. Takes an optional "limit" parameter with a default of 2
+	var err error
+	postLimit := 2
+	if len(cmd.Args) > 1 {
+		return fmt.Errorf(`Too many arguments. You may choose to add the maximum number of posts to display 
+            as an integer. Defaults to 2.`)
+	} else if len(cmd.Args) == 1 {
+		postLimit, err = strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Error parsing post limit string: %w", err)
+		}
+	}
+
+	// Get posts for the current user and display them
+	postParams := database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  int32(postLimit),
+	}
+	userPosts, err := s.DB.GetPostsForUser(context.Background(), postParams)
+	if err != nil {
+		return fmt.Errorf("Error retrieving posts: %w", err)
+	}
+
+	nUserPosts := len(userPosts)
+	for i, post := range userPosts {
+		fmt.Printf("\nTitle: %s\n", post.Title)
+		fmt.Printf("\nURL: %s\n", post.Url)
+		fmt.Printf("\nPublish Date: %s\n", post.PublishedAt.String())
+		if post.Description.Valid {
+			fmt.Printf("\nDescription:\n%s\n", post.Description.String)
+		} else {
+			fmt.Println("\nDescription: N/A")
+		}
+
+		if (nUserPosts > 1) && (i < nUserPosts-1) {
+			fmt.Println("\n============")
+		}
 	}
 
 	return nil
